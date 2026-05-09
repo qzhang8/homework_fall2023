@@ -17,7 +17,8 @@ def sample_trajectory(env, policy, max_path_length, render=False):
     """Sample a rollout in the environment from a policy."""
     
     # initialize env for the beginning of a new rollout
-    ob =  env.reset() # TODO: initial observation after resetting the env
+    reset_result = env.reset() # TODO: initial observation after resetting the env
+    ob = reset_result[0] if isinstance(reset_result, tuple) else reset_result
 
     # init vars
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
@@ -33,15 +34,20 @@ def sample_trajectory(env, policy, max_path_length, render=False):
             image_obs.append(cv2.resize(img, dsize=(250, 250), interpolation=cv2.INTER_CUBIC))
     
         # TODO use the most recent ob to decide what to do
-        ac = TODO # HINT: this is a numpy array
+        ac = policy.get_action(ob.astype(np.float32)) # HINT: this is a numpy array
         ac = ac[0]
 
         # TODO: take that action and get reward and next ob
-        next_ob, rew, done, _ = TODO
+        step_result = env.step(ac)
+        if len(step_result) == 5:
+            next_ob, rew, terminated, truncated, _ = step_result
+            done = terminated or truncated
+        else:
+            next_ob, rew, done, _ = step_result
         
         # TODO rollout can end due to done, or due to max_path_length
         steps += 1
-        rollout_done = TODO # HINT: this is either 0 or 1
+        rollout_done = steps >= max_path_length or done # HINT: this is either 0 or 1
         
         # record result of taking that action
         obs.append(ob)
